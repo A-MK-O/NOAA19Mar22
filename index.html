@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NOAA19 Mar 22</title>
+  <style>
+    body {
+      background-color: #2e2e2e;
+      color: white;
+      font-family: Calibri, sans-serif;
+      text-align: center;
+      padding-top: 30px;
+      overflow-x: auto;
+    }
+
+    #container {
+      position: relative;
+      display: inline-block;
+      max-width: 90%;
+    }
+
+    #scan-image {
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+      display: block;
+    }
+
+    #scan-line {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background-color: white;
+      pointer-events: none;
+      display: none;
+      box-shadow: 0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.4);
+    }
+
+    .glitch-dot {
+      position: absolute;
+      background-color: red;
+      width: 1px;
+      height: 1px;
+      pointer-events: none;
+      opacity: 0.9;
+    }
+
+    #noise {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: url('noise.png') repeat;
+      background-size: 200px 200px;
+      opacity: 0.1;
+      animation: noiseScroll 10s linear infinite;
+    }
+
+    @keyframes noiseScroll {
+      0% { background-position: 0 0; }
+      25% { background-position: 50px 100px; }
+      50% { background-position: 100px 200px; }
+      75% { background-position: 150px 300px; }
+      100% { background-position: 200px 400px; }
+    }
+
+    audio {
+      margin-top: 20px;
+      max-width: 90%;
+    }
+
+    #error {
+      color: red;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>NOAA19 Mar 22 Pass</h1>
+
+  <audio id="audio" controls>
+    <source src="audio.wav" type="audio/wav">
+    Your browser does not support the audio element.
+  </audio>
+
+  <div id="container">
+    <img id="scan-image" src="APT-A.png" alt="Satellite Pass">
+    <div id="scan-line"></div>
+    <div id="noise"></div>
+  </div>
+
+  <div id="error"></div>
+
+  <script>
+    const audio = document.getElementById('audio');
+    const scanLine = document.getElementById('scan-line');
+    const image = document.getElementById('scan-image');
+    const container = document.getElementById('container');
+    const noise = document.getElementById('noise');
+    const error = document.getElementById('error');
+
+    let imageHeight = 0;
+    let scanY = 0;
+
+    image.onload = () => {
+      imageHeight = image.offsetHeight;
+      scanLine.style.display = 'block';
+      noise.style.display = 'block';
+    };
+
+    image.onerror = () => {
+      error.textContent = "❌ Error: Image not found. Check the file name.";
+    };
+
+    function updateScanLine() {
+      const speed = Math.random() * 0.5 + 0.5;
+      const height = 2 + Math.random() * 12;
+      const jitter = (Math.random() - 0.5) * 2;
+
+      scanY += speed;
+
+      if (scanY >= imageHeight) {
+        scanY = 0;
+      }
+
+      scanLine.style.top = `${scanY}px`;
+      scanLine.style.height = `${height}px`;
+      scanLine.style.transform = `translateX(${jitter}px)`;
+    }
+
+    function createGlitchDots() {
+      for (let i = 0; i < 5; i++) {
+        if (Math.random() > 0.5) {
+          const dot = document.createElement('div');
+          dot.classList.add('glitch-dot');
+          dot.style.top = `${scanY + Math.floor(Math.random() * 4)}px`;
+          dot.style.left = `${Math.floor(Math.random() * container.offsetWidth)}px`;
+          container.appendChild(dot);
+          setTimeout(() => container.removeChild(dot), 300 + Math.random() * 500);
+        }
+      }
+    }
+
+    function glitchyScan() {
+      if (audio.paused || audio.ended || !imageHeight) return;
+      updateScanLine();
+      createGlitchDots();
+      requestAnimationFrame(glitchyScan);
+    }
+
+    audio.addEventListener('play', () => {
+      scanY = 0;
+      scanLine.style.display = 'block';
+      noise.style.display = 'block';
+      requestAnimationFrame(glitchyScan);
+    });
+
+    audio.addEventListener('pause', () => {
+      noise.style.display = 'none';
+    });
+
+    audio.addEventListener('ended', () => {
+      noise.style.display = 'none';
+    });
+
+    window.onerror = function (msg, src, lineno, colno, errorObj) {
+      error.textContent = `⚠️ JS Error: ${msg} (line ${lineno}:${colno})`;
+    };
+  </script>
+
+</body>
+</html>
